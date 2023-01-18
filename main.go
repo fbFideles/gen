@@ -81,14 +81,45 @@ func coisa(f func(x int, y int) int) string {
 	return extractFromFile(fileName, int64(functionBlockStatment.Block.Lbrace), int64(functionBlockStatment.Block.Rbrace))
 }
 
-func sum(x int, y int) int {
+func theVuck(x int, y int) int {
+	if y <= 0 {
+		return x
+	}
+
 	for {
 		x += y
+		if x > y*y {
+			break
+		}
+	}
+
+	return x + y
+}
+
+func naoToda(x int, y int) int {
+	for {
+		x += y
+		if x > 10*y {
+			break
+		}
+	}
+
+	return x + y
+}
+
+func foiToda(x int, y int) int {
+	for {
+		x += y
+		if x/y > 10 {
+			break
+		}
 	}
 
 	return x + y
 }
 
 func main() {
-	fmt.Println(coisa(sum))
+	fmt.Println("-- The Vuck\n" + coisa(theVuck))
+	fmt.Println("-- Nao Toda\n" + coisa(naoToda))
+	fmt.Println("-- Foi Toda\n" + coisa(foiToda))
 }
