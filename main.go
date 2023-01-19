@@ -56,7 +56,7 @@ func extractFromFile(filename string, startScope, endScope int64) string {
 	return string(buf)
 }
 
-func coisa(f func(x int, y int) int) string {
+func stringfyFunction(f func(x int, y int) int) string {
 	// gets the program pointer of the given function
 	p := reflect.ValueOf(f).Pointer()
 	fc := runtime.FuncForPC(p)
@@ -84,5 +84,5 @@ func sum(x int, y int) int {
 }
 
 func main() {
-	fmt.Println(coisa(sum))
+	fmt.Println(stringfyFunction(sum))
 }
