@@ -24,21 +24,22 @@ func New(fs *token.FileSet, functionName string) *FunctionDefinition {
 type FunctionDefinition struct {
 	Fset         *token.FileSet
 	FunctionName string
-	FuncDec      *ast.FuncDecl
+	FuncAST      *ast.FuncDecl
 }
 
 func (f *FunctionDefinition) Visit(n ast.Node) ast.Visitor {
 	if n == nil {
 		return nil
 	}
-
-	if bs, ok := n.(*ast.FuncDecl); ok {
-		if f.FunctionName == bs.Name.Name {
-			f.FuncDec = bs
-			return nil
-		}
+	bs, ok := n.(*ast.FuncDecl)
+	if !ok {
+		return f
 	}
-	return f
+	if f.FunctionName != bs.Name.Name {
+		return f
+	}
+	f.FuncAST = bs
+	return nil
 }
 
 func extractFromFile(filename string, startScope, endScope int64) string {
@@ -69,14 +70,14 @@ func stringfyFunction(f func(x int, y int) int) string {
 		panic(err)
 	}
 
-	functionBlockStatment := New(fset, strings.Split(fc.Name(), ".")[1])
-	ast.Walk(functionBlockStatment, node)
+	functionDeclaration := New(fset, strings.Split(fc.Name(), ".")[1])
+	ast.Walk(functionDeclaration, node)
 
-	if functionBlockStatment.FuncDec == nil {
+	if functionDeclaration.FuncAST == nil {
 		return "not found"
 	}
 
-	return extractFromFile(fileName, int64(functionBlockStatment.FuncDec.Pos()), int64(functionBlockStatment.FuncDec.End()))
+	return extractFromFile(fileName, int64(functionDeclaration.FuncAST.Pos()), int64(functionDeclaration.FuncAST.End()))
 }
 
 func sum(x int, y int) int {
