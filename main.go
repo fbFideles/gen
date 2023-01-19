@@ -9,6 +9,7 @@ import (
 	"os"
 	"reflect"
 	"runtime"
+	"strings"
 )
 
 /*
@@ -16,29 +17,26 @@ import (
 		the execution
 */
 
-func New(fs *token.FileSet, firstStmtLine int) *BlockStatement {
-	return &BlockStatement{Fset: fs, Line: firstStmtLine}
+func New(fs *token.FileSet, functionName string) *FunctionDefinition {
+	return &FunctionDefinition{Fset: fs, FunctionName: functionName}
 }
 
-type BlockStatement struct {
-	Fset  *token.FileSet
-	Line  int
-	Block *ast.BlockStmt
+type FunctionDefinition struct {
+	Fset         *token.FileSet
+	FunctionName string
+	FuncDec      *ast.FuncDecl
 }
 
-func (f *BlockStatement) Visit(n ast.Node) ast.Visitor {
+func (f *FunctionDefinition) Visit(n ast.Node) ast.Visitor {
 	if n == nil {
 		return nil
 	}
 
-	if bs, ok := n.(*ast.BlockStmt); ok {
-		stmtstart := bs.Pos()
-		stmtline := f.Fset.Position(stmtstart).Line
-		if stmtline == f.Line {
-			f.Block = bs
+	if bs, ok := n.(*ast.FuncDecl); ok {
+		if f.FunctionName == bs.Name.Name {
+			f.FuncDec = bs
 			return nil
 		}
-
 	}
 	return f
 }
@@ -50,7 +48,7 @@ func extractFromFile(filename string, startScope, endScope int64) string {
 	}
 	defer f.Close()
 	f.Seek(startScope-1, 0)
-	buf := make([]byte, (endScope-startScope)+1)
+	buf := make([]byte, (endScope - startScope))
 	_, err = io.ReadFull(f, buf)
 	if err != nil {
 		panic(err)
@@ -62,7 +60,7 @@ func coisa(f func(x int, y int) int) string {
 	// gets the program pointer of the given function
 	p := reflect.ValueOf(f).Pointer()
 	fc := runtime.FuncForPC(p)
-	fileName, line := fc.FileLine(p)
+	fileName, _ := fc.FileLine(p)
 
 	fset := token.NewFileSet()
 
@@ -71,21 +69,17 @@ func coisa(f func(x int, y int) int) string {
 		panic(err)
 	}
 
-	functionBlockStatment := New(fset, line)
+	functionBlockStatment := New(fset, strings.Split(fc.Name(), ".")[1])
 	ast.Walk(functionBlockStatment, node)
 
-	if functionBlockStatment.Block == nil {
+	if functionBlockStatment.FuncDec == nil {
 		return "not found"
 	}
 
-	return extractFromFile(fileName, int64(functionBlockStatment.Block.Lbrace), int64(functionBlockStatment.Block.Rbrace))
+	return extractFromFile(fileName, int64(functionBlockStatment.FuncDec.Pos()), int64(functionBlockStatment.FuncDec.End()))
 }
 
 func sum(x int, y int) int {
-	for {
-		x += y
-	}
-
 	return x + y
 }
 
